@@ -13,16 +13,19 @@ form.addEventListener('submit', (e) => e.preventDefault());
 locationBtn.addEventListener('click', searchWeatherByName);
 locationName.addEventListener('keydown', (e) => (e.keyCode === 13) && searchWeatherByName());
 
+// Search Weather By Criterias
+
+// By Name
 function searchWeatherByName() {
   const locationValue = locationName.value;
   if(!locationValue) return ui.emptyLocationName();
   
   weather.setLocationByName(locationValue);
-  weather.getWeather()
+  weather.getWeatherByName()
         .then((payload) => {
           if(payload.cod === '404') return ui.weatherRequestError(payload);
           ui.setWeatherInformation(payload);
-          WStorage.setToLocalStorage('weather', payload);
+          WStorage.setToLocalStorage('weather', locationValue);
         })
         .catch((err) => console.error(err));
   
@@ -30,9 +33,23 @@ function searchWeatherByName() {
   ui.resetFieldValue(locationName);
 };
 
-function initializeData() {
-  const lastWeatherInfo = WStorage.retrieveFromLocalStorage('weather');
-  if (lastWeatherInfo) ui.setWeatherInformation(lastWeatherInfo);
+// By Coordinates
+function searchWeatherByLatLong() {
+  weather.getPosition()
+        .then((coords) => {
+          weather.getWeatherByLatLon(coords)
+                .then((payload) => {
+                  if(payload.cod === '404') return ui.weatherRequestError(payload);
+                  ui.setWeatherInformation(payload);
+                })
+                .catch((err) => console.error(err));
+        });
 };
 
-initializeData();
+// Init Function
+(function () {
+  const locationValue = WStorage.retrieveFromLocalStorage('weather');
+  if (!locationValue) return searchWeatherByLatLong();
+  locationName.value = locationValue;
+  this.searchWeatherByName();
+})();
